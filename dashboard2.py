@@ -2,7 +2,10 @@ import streamlit as st
 import pandas as pd
 import sqlite3
 import os
+import streamlit as st
 
+# إظهار حقل إدخال المفتاح في القائمة الجانبية
+api_key_input = st.sidebar.text_input("🔑 Gemini API Key", type="password")
 # إعدادات صفحة Streamlit
 st.set_page_config(
     page_title="تطبيق ذكاء السوق - توصيل الطعام",
