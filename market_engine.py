@@ -49,3 +49,5 @@ def run_scraping_pipeline(query_keyword="طلب الطعام", country_code="ps"
 
     print("تم سحب البيانات، تخزينها في SQLite، وتصدير Excel بنجاح!")
     return df_apps, df_reviews
+if __name__ == "__main__":
+    run_scraping_pipeline()
