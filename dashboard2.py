@@ -37,23 +37,28 @@ def load_data():
             st.error(f"خطأ أثناء قراءة قاعدة البيانات: {e}")
             return pd.DataFrame()
     else:
-        # إرجاع DataFrame فارغة في حال عدم وجود الملف على السحابة بدلاً من توقف التطبيق
-        return pd.DataFrame(columns=["app_name", "userName", "score", "content", "at"])
+        return pd.DataFrame()
 
 df_reviews = load_data()
 
-# 4. معالجة حالة البيانات الفارغة بأمان (الحل الجذري للخطأ)
+# 4. معالجة حالة البيانات الفارغة بأمان
 if df_reviews is None or df_reviews.empty:
     st.title("📊 لوحة ذكاء السوق ومقارنة المنافسين (توصيل الطعام)")
-    st.info("💡 البيانات غير متوفرة حالياً أو جارٍ تحميل قاعدة البيانات. يُرجى التاكد من وجود ملف `market_intelligence.db` في المستودع.")
+    st.info("💡 البيانات غير متوفرة حالياً أو جارٍ تحميل قاعدة البيانات. يُرجى التأكد من وجود ملف `market_intelligence.db` في المستودع.")
 else:
-    # تصفية التطبيقات المتاحة
-    app_list = df_reviews['app_name'].unique().tolist() if 'app_name' in df_reviews.columns else []
+    # التعرف الآلي على اسم عامود التطبيق (سواء app_id أو app_name)
+    app_col = 'app_id' if 'app_id' in df_reviews.columns else ('app_name' if 'app_name' in df_reviews.columns else None)
+    
+    if app_col:
+        app_list = df_reviews[app_col].dropna().unique().tolist()
+    else:
+        app_list = []
+
     selected_app = st.sidebar.selectbox("اختر التطبيق للعرض:", ["الكل"] + app_list)
 
     # تصفية البيانات بحسب الاختيار
-    if selected_app != "الكل":
-        filtered_df = df_reviews[df_reviews['app_name'] == selected_app]
+    if selected_app != "الكل" and app_col:
+        filtered_df = df_reviews[df_reviews[app_col] == selected_app]
     else:
         filtered_df = df_reviews
 
@@ -64,6 +69,7 @@ else:
     # عرض كروت المؤشرات الرئيسية (KPIs)
     col1, col2, col3 = st.columns(3)
     col1.metric("إجمالي المراجعات", len(filtered_df))
+    
     avg_score = round(filtered_df['score'].mean(), 2) if 'score' in filtered_df.columns and not filtered_df.empty else 0
     col2.metric("متوسط التقييم", f"⭐ {avg_score}")
     col3.metric("عدد التطبيقات المشمولة", len(app_list))
