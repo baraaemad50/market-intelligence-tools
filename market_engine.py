@@ -1,53 +1,68 @@
+import os
 import sqlite3
 import pandas as pd
-from google_play_scraper import Sort, reviews, search
+from google_play_scraper import search, reviews, Sort
 
-def run_scraping_pipeline(query_keyword="طلب الطعام", country_code="ps", count_per_app=30):
-    print(" 1. جاري البحث عن التطبيقات في السوق المحلي...")
-    results = search(query_keyword, lang="ar", country=country_code, n_hits=5)
+def search_apps(keyword, country="ps", lang="ar", n_hits=10):
+    """البحث الديناميكي عن التطبيقات في متجر بلاي"""
+    try:
+        results = search(keyword, lang=lang, country=country, n_hits=n_hits)
+        apps_data = []
+        for app in results:
+            apps_data.append({
+                'app_id': app.get('appId'),
+                'title': app.get('title'),
+                'developer': app.get('developer'),
+                'score': app.get('score'),
+                'icon': app.get('icon')
+            })
+        return apps_data
+    except Exception as e:
+        print(f"Error searching apps: {e}")
+        return []
 
-    apps_data = []
-    for app in results:
-        apps_data.append({
-            'app_id': app.get('appId'),
-            'title': app.get('title'),
-            'score': app.get('score'),
-            'developer': app.get('developer')
-        })
-    df_apps = pd.DataFrame(apps_data)
-
-    print(" 2. جاري سحب تقييمات المستخدمين...")
+def scrape_app_reviews(app_ids, count=200):
+    """سحب مراجعات التطبيقات المحددة (150-300 مراجعة لكل تطبيق)"""
     all_reviews = []
-    for app_id in df_apps['app_id']:
+    for app_id in app_ids:
         try:
-            res, _ = reviews(app_id, lang='ar', country=country_code, sort=Sort.NEWEST, count=count_per_app)
-            for r in res:
+            rvs, _ = reviews(
+                app_id,
+                lang='ar',
+                country='ps',
+                sort=Sort.NEWEST,
+                count=count
+            )
+            for r in rvs:
                 all_reviews.append({
                     'app_id': app_id,
+                    'review_id': r.get('reviewId'),
                     'user_name': r.get('userName'),
                     'score': r.get('score'),
                     'content': r.get('content'),
-                    'at': str(r.get('at'))
+                    'at': r.get('at'),
+                    'sentiment': 'Positive' if r.get('score', 3) >= 4 else ('Negative' if r.get('score', 3) <= 2 else 'Neutral')
                 })
         except Exception as e:
-            print(f" تنبيه أثناء سحب التطبيق {app_id}: {e}")
+            print(f"Error scraping {app_id}: {e}")
+    return pd.DataFrame(all_reviews)
 
-    df_reviews = pd.DataFrame(all_reviews)
-
-    # حفظ في قاعدة البيانات SQLite
-    conn = sqlite3.connect("market_intelligence.db")
-    if not df_reviews.empty:
-        df_reviews.to_sql('reviews', conn, if_exists='replace', index=False)
+def save_to_sqlite(df, db_name="competitor_intelligence.db"):
+    """حفظ البيانات في قاعدة بيانات SQLite محلية"""
+    if df.empty:
+        return
+    conn = sqlite3.connect(db_name)
+    df.to_sql('reviews', conn, if_exists='replace', index=False)
     conn.close()
 
-    # تصدير ملف إكسل متعدد الصفحات
-    with pd.ExcelWriter("competitor_analysis.xlsx", engine='openpyxl') as writer:
-        if not df_apps.empty:
-            df_apps.to_excel(writer, sheet_name='Competitors', index=False)
-        if not df_reviews.empty:
-            df_reviews.to_excel(writer, sheet_name='Reviews', index=False)
-
-    print("تم سحب البيانات، تخزينها في SQLite، وتصدير Excel بنجاح!")
-    return df_apps, df_reviews
-if __name__ == "__main__":
-    run_scraping_pipeline()
+def generate_excel_report(df, excel_name="competitor_analysis.xlsx"):
+    """توليد تقرير إكسل متعدد الصفحات"""
+    if df.empty:
+        return
+    with pd.ExcelWriter(excel_name, engine='openpyxl') as writer:
+        df.to_excel(writer, sheet_name='All Reviews', index=False)
+        summary_df = df.groupby('app_id').agg(
+            total_reviews=('score', 'count'),
+            average_score=('score', 'mean')
+        ).reset_index()
+        summary_df.to_excel(writer, sheet_name='Competitor Summary', index=False)
