@@ -8,7 +8,7 @@ from market_ai import generate_market_gap_report
 # 1. إعدادات الصفحة
 st.set_page_config(page_title="Market Intelligence Tool", page_icon="📊", layout="wide")
 
-# تعديل المحاذاة والاتجاه ليكون من اليمين لليسار للغة العربية
+# تعديل المحاذاة والاتجاه ليكون من اليمين لليسار للغة العربية وتثبيت محاذاة عناصر التقرير
 st.markdown(
     """
     <style>
@@ -20,8 +20,24 @@ st.markdown(
         direction: rtl;
         text-align: right;
     }
-    h1, h2, h3, h4, h5, h6, p, label, span {
+    h1, h2, h3, h4, h5, h6, p, label, span, li, ul, ol {
         text-align: right !important;
+        direction: rtl !important;
+    }
+    /* محاذاة القوائم المنقطة والعناوين الفرعية للتقرير */
+    .stMarkdown {
+        direction: rtl;
+        text-align: right;
+    }
+    .stMarkdown ul, .stMarkdown ol {
+        padding-right: 20px !important;
+        padding-left: 0px !important;
+        direction: rtl !important;
+        text-align: right !important;
+    }
+    .stMarkdown li {
+        text-align: right !important;
+        direction: rtl !important;
     }
     .stTextInput, .stSelectbox, .stButton {
         direction: rtl;
@@ -102,40 +118,4 @@ if 'df' in st.session_state and not st.session_state['df'].empty:
     st.markdown("---")
     st.subheader("التحليل البصري للرسوم البيانية")
     
-    chart_col1, chart_col2 = st.columns(2)
-    
-    with chart_col1:
-        st.markdown("توزيع تقييمات العملاء")
-        rating_counts = df['score'].value_counts().sort_index()
-        st.bar_chart(rating_counts)
-        
-    with chart_col2:
-        st.markdown("متوسط التقييم لكل تطبيق")
-        if 'app_name' in df.columns:
-            avg_scores = df.groupby('app_name')['score'].mean()
-            st.bar_chart(avg_scores)
-        else:
-            avg_scores = df.groupby('app_id')['score'].mean()
-            st.bar_chart(avg_scores)
-
-    st.markdown("---")
-    st.subheader("عينة من مراجعات العملاء")
-    st.dataframe(df.head(10), use_container_width=True)
-    
-    if os.path.exists("competitor_analysis.xlsx"):
-        with open("competitor_analysis.xlsx", "rb") as f:
-            st.download_button("تحميل تقرير الإكسل", f, file_name="competitor_analysis.xlsx")
-
-    st.markdown("---")
-    st.subheader("التقرير الاستراتيجي وتحليل الفجوات")
-    
-    if st.button("توليد التقرير الاستراتيجي بالذكاء الاصطناعي"):
-        if not api_key:
-            st.error("يرجى إدخال مفتاح Gemini API أولاً.")
-        else:
-            with st.spinner("جاري تحليل الفجوات..."):
-                report = generate_market_gap_report(df, api_key=api_key)
-                st.success("تم توليد التقرير بنجاح!")
-                st.markdown(report)
-else:
-    st.info("يرجى استخدام القائمة الجانبية للبحث عن التطبيقات وتحديدها لبدء العمل.")
+    chart_col1, chart_col2 =
