@@ -24,6 +24,12 @@ if st.sidebar.button("بحث عن التطبيقات 🔎"):
     with st.spinner("جاري البحث..."):
         st.session_state['apps'] = search_apps(keyword, country=country)
 
+# تخزين معلومات التطبيقات للوصول السريع للأيقونات
+app_dict = {}
+if 'apps' in st.session_state and st.session_state['apps']:
+    for app in st.session_state['apps']:
+        app_dict[app['app_id']] = app
+
 # 3. عنوان التطبيق الرئيسي
 st.title("📊 أداة ذكاء السوق ومقارنة المنافسين")
 
@@ -42,23 +48,38 @@ if 'apps' in st.session_state and st.session_state['apps']:
                     save_to_sqlite(df_reviews)
                     generate_excel_report(df_reviews)
                     st.session_state['df'] = df_reviews
+                    st.session_state['selected_ids'] = selected_app_ids
                     if os.path.exists("market_gaps_report.txt"):
                         os.remove("market_gaps_report.txt")
                     st.success("تم الانتهاء من التجريف وبناء قاعدة البيانات وتصدير الإكسل بنجاح!")
                 else:
                     st.warning("لم يتم العثور على مراجعات كافية.")
 
-# 4. عرض المؤشرات، الرسوم البيانية، البيانات، وزر التوليد
+# 4. عرض المؤشرات، الأيقونات، والرسوم البيانية
 if 'df' in st.session_state and not st.session_state['df'].empty:
     df = st.session_state['df']
     
+    # 🖼️ عرض أيقونات التطبيقات المختارة بشكل بصري مرتب
+    if 'selected_ids' in st.session_state:
+        st.markdown("---")
+        st.subheader("📱 التطبيقات قيد المقارنة والتحليل")
+        icon_cols = st.columns(len(st.session_state['selected_ids']))
+        for idx, app_id in enumerate(st.session_state['selected_ids']):
+            if app_id in app_dict:
+                app_info = app_dict[app_id]
+                with icon_cols[idx]:
+                    if 'icon' in app_info and app_info['icon']:
+                        st.image(app_info['icon'], width=80)
+                    st.markdown(f"**{app_info.get('title', 'app')}**")
+                    st.markdown(f"⭐ {app_info.get('score', 'N/A')}")
+
     st.markdown("---")
     col1, col2, col3 = st.columns(3)
     col1.metric("إجمالي المراجعات", len(df))
     col2.metric("متوسط التقييم العام", f"⭐ {round(df['score'].mean(), 2)}")
     col3.metric("عدد التطبيقات", df['app_id'].nunique())
     
-    # 📊 إضافة رسوم بيانية تفاعلية (Charts)
+    # 📊 التحليل البصري للرسوم البيانية
     st.markdown("---")
     st.subheader("📈 التحليل البصري للرسوم البيانية (Visual Charts)")
     
@@ -66,13 +87,11 @@ if 'df' in st.session_state and not st.session_state['df'].empty:
     
     with chart_col1:
         st.markdown("#### 🌟 توزيع تقييمات العملاء (Rating Distribution)")
-        # رسم بياني يوضح تكرار كل تقييم (من 1 إلى 5 نجوم)
         rating_counts = df['score'].value_counts().sort_index()
         st.bar_chart(rating_counts)
         
     with chart_col2:
         st.markdown("#### 🏆 متوسط التقييم لكل تطبيق مقارنةً بالمنافسين")
-        # حساب متوسط التقييم لكل تطبيق
         if 'app_name' in df.columns:
             avg_scores = df.groupby('app_name')['score'].mean()
             st.bar_chart(avg_scores)
@@ -86,7 +105,7 @@ if 'df' in st.session_state and not st.session_state['df'].empty:
     
     # زر تنزيل الإكسل
     if os.path.exists("competitor_analysis.xlsx"):
-        with open("competitor_analysis.xlsx", "rbda" if False else "rb") as f:
+        with open("competitor_analysis.xlsx", "rb") as f:
             st.download_button("📥 تحميل تقرير الإكسل (Excel Report)", f, file_name="competitor_analysis.xlsx")
 
     # 5. زر توليد التقرير الاستراتيجي بالذكاء الاصطناعي
