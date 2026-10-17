@@ -77,7 +77,7 @@ if dynamic_apps:
     
     if selected_apps_to_scrape:
         if st.sidebar.button("🚀 تشغيل التحليل المختار"):
-            st.success(تم اختيار {len(selected_apps_to_scrape)} تطبيقات بنجاح! سيتم دمجها واستعراضها.)
+            st.success(f"تم اختيار {len(selected_apps_to_scrape)} تطبيقات بنجاح! سيتم دمجها واستعراضها.")
 
 st.markdown("---")
 
@@ -115,19 +115,4 @@ else:
     st.subheader("📋 عينة من مراجعات العملاء")
     st.dataframe(filtered_df.head(10), use_container_width=True)
 
-    # رسم بياني لتوزيع التقييمات
-    if 'score' in filtered_df.columns and not filtered_df.empty:
-        st.subheader("📈 توزيع درجات التقييم")
-        score_counts = filtered_df['score'].value_counts().sort_index()
-        st.bar_chart(score_counts)
-
-# 6. عرض التقرير الاستراتيجي
-st.markdown("---")
-st.subheader("📑 التقرير الاستراتيجي وتحليل الفجوات (AI-Powered)")
-
-report_file = "market_gaps_report.txt"
-if os.path.exists(report_file):
-    with open(report_file, "r", encoding="utf-8") as f:
-        st.text_area("محتوى التقرير الاستراتيجي:", f.read(), height=250)
-else:
-    st.warning("⚠️ لم يتم العثور على ملف التقرير الاستراتيجي `market_gaps_report.txt`.")
+    # رسم بياني لتوزيع التقي
