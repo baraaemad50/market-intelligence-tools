@@ -8,6 +8,33 @@ from market_ai import generate_market_gap_report
 # 1. إعدادات الصفحة
 st.set_page_config(page_title="Market Intelligence Tool", page_icon="📊", layout="wide")
 
+# 🎨 تعديل المحاذاة والاتجاه ليكون من اليمين لليسار (RTL) للغة العربية
+st.markdown(
+    """
+    <style>
+    /* جعل اتجاه الصفحة بالكامل من اليمين لليسار */
+    .stApp {
+        direction: rtl;
+        text-align: right;
+    }
+    /* تعديل محاذاة القائمة الجانبية */
+    .stSidebar {
+        direction: rtl;
+        text-align: right;
+    }
+    /* تنسيق العناوين والنصوص */
+    h1, h2, h3, h4, h5, h6, p, label, span {
+        text-align: right !important;
+    }
+    /* تنسيق الأزرار وعناصر الإدخال */
+    .stTextInput, .stSelectbox, .stButton {
+        direction: rtl;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 # 2. القائمة الجانبية (Sidebar)
 st.sidebar.title("🎛️ لوحة التحكم الديناميكية")
 
@@ -122,3 +149,4 @@ if 'df' in st.session_state and not st.session_state['df'].empty:
                 st.markdown(report)
 else:
     st.info("👋 يرجى استخدام القائمة الجانبية للبحث عن التطبيقات وتحديدها لبدء العمل.")
+✨ ماذا سيحدث بعد هذا التعديل؟
