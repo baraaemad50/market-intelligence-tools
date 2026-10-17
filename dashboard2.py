@@ -2,10 +2,17 @@ import os
 import streamlit as st
 import pandas as pd
 from market_engine import search_apps, scrape_app_reviews, save_to_sqlite, generate_excel_report
+from market_ai import generate_market_gap_report
 
 st.set_page_config(page_title="Market Intelligence Tool", page_icon="📊", layout="wide")
 
+# 1. القائمة الجانبية (Sidebar)
 st.sidebar.title("🎛️ لوحة التحكم الديناميكية")
+
+# حقل إدخال مفتاح API
+user_api_key = st.sidebar.text_input("🔑 Gemini API Key", type="password")
+api_key = user_api_key or os.environ.get("GEMINI_API_KEY", "")
+
 st.sidebar.markdown("---")
 st.sidebar.subheader("🔍 البحث الديناميكي في متجر بلاي")
 keyword = st.sidebar.text_input("أدخل كلمة مفتاحية (مثل: food delivery, fitness):", "food delivery")
@@ -26,17 +33,19 @@ if 'apps' in st.session_state and st.session_state['apps']:
             
     if selected_app_ids:
         if st.sidebar.button("🚀 تشغيل السحب والتحليل"):
-            with st.spinner("جاري سحب المراجعات وبناء قاعدة البيانات..."):
+            with st.spinner("جاري سحب المراجعات وبناء قاعدة البيانات وتحليل الذكاء الاصطناعي..."):
                 df_reviews = scrape_app_reviews(selected_app_ids, count=150)
                 if not df_reviews.empty:
                     save_to_sqlite(df_reviews)
                     generate_excel_report(df_reviews)
+                    # توليد التقرير الاستراتيجي وحفظه
+                    generate_market_gap_report(df_reviews, api_key=api_key)
                     st.session_state['df'] = df_reviews
                     st.success("تم الانتهاء من التجريف والتحليل بنجاح!")
                 else:
                     st.warning("لم يتم العثور على مراجعات كافية.")
 
-# عرض النتائج إذا كانت مخزنة في الجلسة أو قاعدة البيانات
+# 2. عرض النتائج والإحصائيات
 if 'df' in st.session_state and not st.session_state['df'].empty:
     df = st.session_state['df']
     
@@ -53,5 +62,16 @@ if 'df' in st.session_state and not st.session_state['df'].empty:
     if os.path.exists("competitor_analysis.xlsx"):
         with open("competitor_analysis.xlsx", "rb") as f:
             st.download_button("📥 تحميل تقرير الإكسل (Excel Report)", f, file_name="competitor_analysis.xlsx")
+
+    # 3. عرض التقرير الاستراتيجي بشكل نصي أنيق بدون مربعات نص أو نصوص غير مرغوب بها
+    st.markdown("---")
+    st.subheader("📑 التقرير الاستراتيجي وتحليل الفجوات (AI-Powered)")
+    
+    if os.path.exists("market_gaps_report.txt"):
+        with open("market_gaps_report.txt", "r", encoding="utf-8") as f:
+            report_content = f.read()
+            st.markdown(report_content)
+    else:
+        st.warning("⚠️ يرجى تشغيل التحليل لتوليد التقرير الاستراتيجي.")
 else:
     st.info("👋 يرجى استخدام القائمة الجانبية للبحث عن التطبيقات وتحديدها لبدء العمل.")
