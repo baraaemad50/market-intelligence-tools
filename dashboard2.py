@@ -42,14 +42,13 @@ if 'apps' in st.session_state and st.session_state['apps']:
                     save_to_sqlite(df_reviews)
                     generate_excel_report(df_reviews)
                     st.session_state['df'] = df_reviews
-                    # مسح أي تقرير قديم لتجنب عرضه تلقائياً
                     if os.path.exists("market_gaps_report.txt"):
                         os.remove("market_gaps_report.txt")
                     st.success("تم الانتهاء من التجريف وبناء قاعدة البيانات وتصدير الإكسل بنجاح!")
                 else:
                     st.warning("لم يتم العثور على مراجعات كافية.")
 
-# 4. عرض المؤشرات، البيانات، زر تحميل الإكسل، وزر التوليد فقط
+# 4. عرض المؤشرات، الرسوم البيانية، البيانات، وزر التوليد
 if 'df' in st.session_state and not st.session_state['df'].empty:
     df = st.session_state['df']
     
@@ -59,15 +58,38 @@ if 'df' in st.session_state and not st.session_state['df'].empty:
     col2.metric("متوسط التقييم العام", f"⭐ {round(df['score'].mean(), 2)}")
     col3.metric("عدد التطبيقات", df['app_id'].nunique())
     
+    # 📊 إضافة رسوم بيانية تفاعلية (Charts)
+    st.markdown("---")
+    st.subheader("📈 التحليل البصري للرسوم البيانية (Visual Charts)")
+    
+    chart_col1, chart_col2 = st.columns(2)
+    
+    with chart_col1:
+        st.markdown("#### 🌟 توزيع تقييمات العملاء (Rating Distribution)")
+        # رسم بياني يوضح تكرار كل تقييم (من 1 إلى 5 نجوم)
+        rating_counts = df['score'].value_counts().sort_index()
+        st.bar_chart(rating_counts)
+        
+    with chart_col2:
+        st.markdown("#### 🏆 متوسط التقييم لكل تطبيق مقارنةً بالمنافسين")
+        # حساب متوسط التقييم لكل تطبيق
+        if 'app_name' in df.columns:
+            avg_scores = df.groupby('app_name')['score'].mean()
+            st.bar_chart(avg_scores)
+        else:
+            avg_scores = df.groupby('app_id')['score'].mean()
+            st.bar_chart(avg_scores)
+
+    st.markdown("---")
     st.subheader("📋 عينة من مراجعات العملاء")
     st.dataframe(df.head(10), use_container_width=True)
     
     # زر تنزيل الإكسل
     if os.path.exists("competitor_analysis.xlsx"):
-        with open("competitor_analysis.xlsx", "rb") as f:
+        with open("competitor_analysis.xlsx", "rbda" if False else "rb") as f:
             st.download_button("📥 تحميل تقرير الإكسل (Excel Report)", f, file_name="competitor_analysis.xlsx")
 
-    # 5. قسم زر توليد التقرير الاستراتيجي (لا يظهر التقرير إلا عند النقر على الزر حصرياً)
+    # 5. زر توليد التقرير الاستراتيجي بالذكاء الاصطناعي
     st.markdown("---")
     st.subheader("📑 التقرير الاستراتيجي وتحليل الفجوات (AI-Powered)")
     
