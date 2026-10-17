@@ -3,6 +3,7 @@ import sqlite3
 import pandas as pd
 import streamlit as st
 from market_engine import search_apps, scrape_app_reviews, save_to_sqlite, generate_excel_report
+from market_ai import generate_market_gap_report
 
 # 1. إعدادات الصفحة
 st.set_page_config(page_title="Market Intelligence Tool", page_icon="📊", layout="wide")
@@ -35,17 +36,19 @@ if 'apps' in st.session_state and st.session_state['apps']:
             
     if selected_app_ids:
         if st.sidebar.button("🚀 تشغيل السحب والتحليل"):
-            with st.spinner("جاري سحب المراجعات وبناء قاعدة البيانات وإصدار التقرير..."):
+            with st.spinner("جاري سحب المراجعات، بناء قاعدة البيانات، وتحليل الذكاء الاصطناعي..."):
                 df_reviews = scrape_app_reviews(selected_app_ids, count=150)
                 if not df_reviews.empty:
                     save_to_sqlite(df_reviews)
                     generate_excel_report(df_reviews)
+                    # توليد التقرير الاستراتيجي عبر الذكاء الاصطناعي وتخزينه تلقائياً
+                    generate_market_gap_report(df_reviews, api_key=api_key)
                     st.session_state['df'] = df_reviews
-                    st.success("تم الانتهاء من التجريف والتحليل بنجاح!")
+                    st.success("تم الانتهاء من التجريف والتحليل وتوليد تقرير الذكاء الاصطناعي بنجاح!")
                 else:
                     st.warning("لم يتم العثور على مراجعات كافية.")
 
-# 4. عرض المؤشرات والبيانات وزر تحميل الإكسل فقط
+# 4. عرض المؤشرات، البيانات، زر تحميل الإكسل، وقسم الذكاء الاصطناعي
 if 'df' in st.session_state and not st.session_state['df'].empty:
     df = st.session_state['df']
     
@@ -62,5 +65,16 @@ if 'df' in st.session_state and not st.session_state['df'].empty:
     if os.path.exists("competitor_analysis.xlsx"):
         with open("competitor_analysis.xlsx", "rb") as f:
             st.download_button("📥 تحميل تقرير الإكسل (Excel Report)", f, file_name="competitor_analysis.xlsx")
+
+    # 5. عرض قسم التقرير الاستراتيجي بالذكاء الاصطناعي (AI-Powered Insights)
+    st.markdown("---")
+    st.subheader("📑 التقرير الاستراتيجي وتحليل الفجوات (AI-Powered)")
+    
+    if os.path.exists("market_gaps_report.txt"):
+        with open("market_gaps_report.txt", "r", encoding="utf-8") as f:
+            report_content = f.read()
+            st.markdown(report_content)
+    else:
+        st.warning("⚠️ يرجى إدخال مفتاح Gemini API في القائمة الجانبية وتشغيل التحليل لتوليد التقرير الاستراتيجي.")
 else:
     st.info("👋 يرجى استخدام القائمة الجانبية للبحث عن التطبيقات وتحديدها لبدء العمل.")
