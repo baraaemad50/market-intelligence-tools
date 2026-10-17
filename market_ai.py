@@ -1,5 +1,5 @@
 import os
-from google import genai
+import google.generativeai as genai
 
 def generate_market_gap_report(df, api_key=None):
     """توليد التقرير الاستراتيجي وتحليل الفجوات باستخدام Google Gemini"""
@@ -8,7 +8,8 @@ def generate_market_gap_report(df, api_key=None):
         return "⚠️ تنبيه: لم يتم العثور على مفتاح Gemini API. يرجى إدخاله في القائمة الجانبية."
 
     try:
-        client = genai.Client(api_key=key)
+        # إعداد مفتاح API
+        genai.configure(api_key=key)
         
         # استخراج المراجعات السلبية (1 و 2 نجوم) لتحليل الشكاوى
         negative_reviews = df[df['score'] <= 2]['content'].dropna().tolist()
@@ -24,10 +25,9 @@ def generate_market_gap_report(df, api_key=None):
         3. توصيات استراتيجية لتطوير التطبيق القادم (Strategic recommendations).
         """
 
-        response = client.models.generate_content(
-            model='gemini-1.5-flash',
-            contents=prompt
-        )
+        # استخدام نموذج gemini-1.5-flash المستقر
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        response = model.generate_content(prompt)
         
         report_text = response.text
         # حفظ التقرير محلياً
