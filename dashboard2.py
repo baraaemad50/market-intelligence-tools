@@ -3,7 +3,7 @@ import sqlite3
 import pandas as pd
 import streamlit as st
 from market_engine import search_apps, scrape_app_reviews, save_to_sqlite, generate_excel_report
-import google.generativeai as genai
+from market_ai import generate_market_gap_report
 
 # 1. إعدادات الصفحة
 st.set_page_config(page_title="Market Intelligence Tool", page_icon="📊", layout="wide")
@@ -36,17 +36,17 @@ if 'apps' in st.session_state and st.session_state['apps']:
             
     if selected_app_ids:
         if st.sidebar.button("🚀 تشغيل السحب والتحليل"):
-            with st.spinner("جاري سحب المراجعات وبناء قاعدة البيانات..."):
+            with st.spinner("جاري سحب المراجعات وبناء قاعدة البيانات وإعداد الملفات..."):
                 df_reviews = scrape_app_reviews(selected_app_ids, count=150)
                 if not df_reviews.empty:
                     save_to_sqlite(df_reviews)
                     generate_excel_report(df_reviews)
                     st.session_state['df'] = df_reviews
-                    st.success("تم الانتهاء من التجريف والتحليل بنجاح!")
+                    st.success("تم الانتهاء من التجريف وبناء قاعدة البيانات وتصدير الإكسل بنجاح!")
                 else:
                     st.warning("لم يتم العثور على مراجعات كافية.")
 
-# 4. عرض المؤشرات، البيانات، زر تحميل الإكسل، وتفاعل الـ AI الذكي
+# 4. عرض المؤشرات، البيانات، زر تحميل الإكسل، وزر الذكاء الاصطناعي المطلوب
 if 'df' in st.session_state and not st.session_state['df'].empty:
     df = st.session_state['df']
     
@@ -64,38 +64,20 @@ if 'df' in st.session_state and not st.session_state['df'].empty:
         with open("competitor_analysis.xlsx", "rb") as f:
             st.download_button("📥 تحميل تقرير الإكسل (Excel Report)", f, file_name="competitor_analysis.xlsx")
 
-    # 5. واجهة تفاعل الذكاء الاصطناعي (AI Interactive Query/Chat Integration) بدلاً من التقرير الثابت
+    # 5. زر توليد التقرير الاستراتيجي بالذكاء الاصطناعي 🤖
     st.markdown("---")
-    st.subheader("🤖 اسأل مساعد الذكاء الاصطناعي عن آراء المستخدمين والفجوات")
+    st.subheader("📑 التقرير الاستراتيجي وتحليل الفجوات (AI-Powered)")
     
-    user_prompt = st.text_input("اكتب سؤالك أو استفسارك هنا (مثلاً: ما هي أكثر الشكاوى تكراراً؟ أو ما هي الميزات المقترحة؟):")
-    
-    if st.button("إرسال للسؤال الذكي 💡"):
+    if st.button("توليد التقرير الاستراتيجي بالذكاء الاصطناعي 🤖"):
         if not api_key:
             st.error("⚠️ يرجى إدخال مفتاح Gemini API في القائمة الجانبية أولاً.")
-        elif not user_prompt:
-            st.warning("⚠️ يرجى كتابة سؤال أو استفسار أولاً.")
         else:
-            with st.spinner("جاري تحليل البيانات والرد عبر الذكاء الاصطناعي..."):
-                try:
-                    genai.configure(api_key=api_key)
-                    model = genai.GenerativeModel('gemini-1.5-flash')
-                    
-                    # أخذ عينة من مراجعات المستخدمين لتغذية نموذج المحادثة
-                    sample_text = "\n- ".join(df['content'].dropna().tolist()[:50])
-                    
-                    full_query = f"""
-                    بناءً على عينة مراجعات المستخدمين التالية للتطبيقات:
-                    {sample_text}
-                    
-                    أجب عن السؤال التالي بدقة واحترافية باللغة العربية:
-                    {user_prompt}
-                    """
-                    
-                    response = model.generate_content(full_query)
-                    st.success("إجابة الذكاء الاصطناعي:")
-                    st.write(response.text)
-                except Exception as e:
-                    st.error(f"حدث خطأ أثناء الاتصال بالذكاء الاصطناعي: {e}")
+            with st.spinner("جاري الاتصال بنموذج Gemini وتحليل الفجوات..."):
+                report = generate_market_gap_report(df, api_key=api_key)
+                st.success("تم توليد التقرير الاستراتيجي بنجاح!")
+                st.markdown(report)
+    elif os.path.exists("market_gaps_report.txt"):
+        with open("market_gaps_report.txt", "r", encoding="utf-8") as f:
+            st.markdown(f.read())
 else:
     st.info("👋 يرجى استخدام القائمة الجانبية للبحث عن التطبيقات وتحديدها لبدء العمل.")
