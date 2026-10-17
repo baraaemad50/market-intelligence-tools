@@ -35,8 +35,10 @@ if 'apps' in st.session_state and st.session_state['apps']:
                 if not df_reviews.empty:
                     save_to_sqlite(df_reviews)
                     generate_excel_report(df_reviews)
+                    # توليد وحفظ التقرير الاستراتيجي تلقائياً بالذكاء الاصطناعي
+                    generate_market_gap_report(df_reviews, api_key=api_key)
                     st.session_state['df'] = df_reviews
-                    st.success("تم الانتهاء من التجريف والتحليل بنجاح!")
+                    st.success("تم الانتهاء من التجريف والتحليل وتوليد التقرير بنجاح!")
                 else:
                     st.warning("لم يتم العثور على مراجعات كافية.")
 
@@ -60,12 +62,13 @@ if 'df' in st.session_state and not st.session_state['df'].empty:
 
     st.markdown("---")
     st.subheader("📑 التقرير الاستراتيجي وتحليل الفجوات (AI-Powered)")
-    if st.button("توليد التقرير الاستراتيجي بالذكاء الاصطناعي 🤖"):
-        with st.spinner("جاري توليد التقرير عبر Gemini..."):
-            report = generate_market_gap_report(df, api_key=api_key)
-            st.write(report)
-    elif os.path.exists("market_gaps_report.txt"):
+    
+    # عرض التقرير كنص مباشر ومنسق بدون مربعات نص (Text Area)
+    if os.path.exists("market_gaps_report.txt"):
         with open("market_gaps_report.txt", "r", encoding="utf-8") as f:
-            st.text_area("التقرير المخزن:", f.read(), height=250)
+            report_content = f.read()
+            st.markdown(report_content)
+    else:
+        st.warning("⚠️ يرجى تشغيل التحليل لتوليد التقرير الاستراتيجي.")
 else:
     st.info("👋 يرجى استخدام القائمة الجانبية للبحث عن التطبيقات وتحديدها لبدء العمل.")
