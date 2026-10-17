@@ -22,14 +22,14 @@ api_key = user_api_key or os.environ.get("GEMINI_API_KEY", "")
 st.sidebar.markdown("---")
 st.sidebar.subheader("🔍 البحث الديناميكي في متجر بلاي")
 
-# حقل بحث لتحديد النيش أو التصنيف (مثلا: food delivery, fitness, shopping)
+# حقل بحث لتحديد النيش أو التصنيف
 search_keyword = st.sidebar.text_input("أدخل كلمة مفتاحية للبحث:", "food delivery")
 country_code = st.sidebar.selectbox("اختر رمز الدولة (Country):", ["ps", "us", "sa", "ae", "gb"], index=0)
 
 # زر جلب التطبيقات بناءً على البحث
 search_clicked = st.sidebar.button("بحث عن التطبيقات 🔎")
 
-# 3. دالة لتحميل البيانات من قاعدة البيانات المحلية (Fallback)
+# 3. دالة لتحميل البيانات من قاعدة البيانات المحلية
 @st.cache_data
 def load_local_data():
     db_path = "market_intelligence.db"
@@ -43,15 +43,18 @@ def load_local_data():
             return pd.DataFrame()
     return pd.DataFrame()
 
-df_reviews = load_local_data()
-
-# واجهة التطبيق الرئيسية
+# واجهة التطبيق الرئيسية (العنوان)
 st.title("📊 أداة ذكاء السوق ومقارنة المنافسين الديناميكية")
 st.caption("ابحث عن أي تصنيف لتطبيقات الهاتف، حدد المنافسين، واستعرض تحليلات الذكاء الاصطناعي مباشرة.")
+
+# استخدام session_state لمتابعة حالة البحث
+if 'has_searched' not in st.session_state:
+    st.session_state['has_searched'] = False
 
 # 4. التعامل مع نتائج البحث الديناميكي في المتجر
 dynamic_apps = []
 if search_clicked and search_keyword:
+    st.session_state['has_searched'] = True
     with st.spinner(f"جاري البحث عن تطبيقات لـ '{search_keyword}' في دولة '{country_code}'..."):
         try:
             results = search(search_keyword, lang="ar", country=country_code, n_hits=10)
@@ -68,6 +71,8 @@ if search_clicked and search_keyword:
 
 # إذا ظهرت نتائج بحث ديناميكية، نعرض مربعات الاختيار (Checkboxes)
 selected_apps_to_scrape = []
+run_analysis = False
+
 if dynamic_apps:
     st.sidebar.markdown("### 📋 اختر التطبيقات للمقارنة (2 إلى 4):")
     for app in dynamic_apps:
@@ -76,43 +81,53 @@ if dynamic_apps:
             selected_apps_to_scrape.append(app['app_id'])
     
     if selected_apps_to_scrape:
-        if st.sidebar.button("🚀 تشغيل التحليل المختار"):
-            st.success(f"تم اختيار {len(selected_apps_to_scrape)} تطبيقات بنجاح! سيتم دمجها واستعراضها.")
+        run_analysis = st.sidebar.button("🚀 تشغيل التحليل المختار")
 
-st.markdown("---")
-
-# 5. عرض البيانات والتحليلات الموجودة في قاعدة البيانات
-if df_reviews is None or df_reviews.empty:
-    st.info("💡 لا توجد بيانات مخزنة محلياً حالياً. يرجى استخدام القائمة الجانبية للبحث الديناميكي أو التأكد من وجود ملف قاعدة البيانات.")
+# 5. منطق العرض الشرطي (الظهور بعد البحث أو التحليل فقط)
+if not st.session_state['has_searched']:
+    st.info("👋 مرحباً بك! يرجى استخدام حقل البحث في القائمة الجانبية (Sidebar) للبحث عن تصنيف التطبيقات وبدء التحليل.")
 else:
-    # التعرف الآلي على عامود التطبيق
-    app_col = 'app_id' if 'app_id' in df_reviews.columns else ('app_name' if 'app_name' in df_reviews.columns else None)
+    df_reviews = load_local_data()
     
-    if app_col:
-        app_list = df_reviews[app_col].dropna().unique().tolist()
-    else:
-        app_list = []
-
-    selected_app = st.selectbox("اختر التطبيق للاستعراض والتصفية:", ["الكل"] + app_list)
-
-    # تصفية البيانات
-    if selected_app != "الكل" and app_col:
-        filtered_df = df_reviews[df_reviews[app_col] == selected_app]
-    else:
-        filtered_df = df_reviews
-
-    # كروت المؤشرات الرئيسية (KPIs)
-    col1, col2, col3 = st.columns(3)
-    col1.metric("إجمالي المراجعات", len(filtered_df))
+    if run_analysis:
+        st.success(f"تم اختيار {len(selected_apps_to_scrape)} تطبيقات بنجاح! جاري عرض البيانات والتحليلات الخاصة بها.")
     
-    avg_score = round(filtered_df['score'].mean(), 2) if 'score' in filtered_df.columns and not filtered_df.empty else 0
-    col2.metric("متوسط التقييم", f"⭐ {avg_score}")
-    col3.metric("عدد التطبيقات المشمولة", len(app_list))
-
     st.markdown("---")
 
-    # جدول البيانات
-    st.subheader("📋 عينة من مراجعات العملاء")
-    st.dataframe(filtered_df.head(10), use_container_width=True)
+    # عرض البيانات والتحليلات
+    if df_reviews is None or df_reviews.empty:
+        st.warning("⚠️ لا توجد بيانات مخزنة حالياً لنتائج هذا البحث.")
+    else:
+        app_col = 'app_id' if 'app_id' in df_reviews.columns else ('app_name' if 'app_name' in df_reviews.columns else None)
+        
+        if app_col:
+            app_list = df_reviews[app_col].dropna().unique().tolist()
+        else:
+            app_list = []
 
-    # رسم بياني لتوزيع التقي
+        selected_app = st.selectbox("اختر التطبيق للاستعراض والتصفية:", ["الكل"] + app_list)
+
+        # تصفية البيانات
+        if selected_app != "الكل" and app_col:
+            filtered_df = df_reviews[df_reviews[app_col] == selected_app]
+        else:
+            filtered_df = df_reviews
+
+        # كروت المؤشرات الرئيسية (KPIs)
+        col1, col2, col3 = st.columns(3)
+        col1.metric("إجمالي المراجعات", len(filtered_df))
+        
+        avg_score = round(filtered_df['score'].mean(), 2) if 'score' in filtered_df.columns and not filtered_df.empty else 0
+        col2.metric("متوسط التقييم", f"⭐ {avg_score}")
+        col3.metric("عدد التطبيقات المشمولة", len(app_list))
+
+        st.markdown("---")
+
+        # جدول البيانات
+        st.subheader("📋 عينة من مراجعات العملاء")
+        st.dataframe(filtered_df.head(10), use_container_width=True)
+
+        # رسم بياني لتوزيع التقييمات
+        if 'score' in filtered_df.columns and not filtered_df.empty:
+            st.subheader("📈 توزيع درجات التقييم")
+            score_counts = filtered_df['score'].
