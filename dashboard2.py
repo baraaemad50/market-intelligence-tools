@@ -24,7 +24,6 @@ st.markdown(
         text-align: right !important;
         direction: rtl !important;
     }
-    /* محاذاة القوائم المنقطة والعناوين الفرعية للتقرير */
     .stMarkdown {
         direction: rtl;
         text-align: right;
@@ -118,4 +117,40 @@ if 'df' in st.session_state and not st.session_state['df'].empty:
     st.markdown("---")
     st.subheader("التحليل البصري للرسوم البيانية")
     
-    chart_col1, chart_col2 =
+    chart_col1, chart_col2 = st.columns(2)
+    
+    with chart_col1:
+        st.markdown("توزيع تقييمات العملاء")
+        rating_counts = df['score'].value_counts().sort_index()
+        st.bar_chart(rating_counts)
+        
+    with chart_col2:
+        st.markdown("متوسط التقييم لكل تطبيق")
+        if 'app_name' in df.columns:
+            avg_scores = df.groupby('app_name')['score'].mean()
+            st.bar_chart(avg_scores)
+        else:
+            avg_scores = df.groupby('app_id')['score'].mean()
+            st.bar_chart(avg_scores)
+
+    st.markdown("---")
+    st.subheader("عينة من مراجعات العملاء")
+    st.dataframe(df.head(10), use_container_width=True)
+    
+    if os.path.exists("competitor_analysis.xlsx"):
+        with open("competitor_analysis.xlsx", "rb") as f:
+            st.download_button("تحميل تقرير الإكسل", f, file_name="competitor_analysis.xlsx")
+
+    st.markdown("---")
+    st.subheader("التقرير الاستراتيجي وتحليل الفجوات")
+    
+    if st.button("توليد التقرير الاستراتيجي بالذكاء الاصطناعي"):
+        if not api_key:
+            st.error("يرجى إدخال مفتاح Gemini API أولاً.")
+        else:
+            with st.spinner("جاري تحليل الفجوات..."):
+                report = generate_market_gap_report(df, api_key=api_key)
+                st.success("تم توليد التقرير بنجاح!")
+                st.markdown(f'<div style="direction: rtl; text-align: right;">{report}</div>', unsafe_allow_html=True)
+else:
+    st.info("يرجى استخدام القائمة الجانبية للبحث عن التطبيقات وتحديدها لبدء العمل.")
