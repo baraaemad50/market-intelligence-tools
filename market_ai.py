@@ -25,8 +25,8 @@ def generate_market_gap_report(df, api_key=None):
         3. توصيات استراتيجية لتطوير التطبيق القادم (Strategic recommendations).
         """
 
-        # استخدام نموذج gemini-1.5-flash المستقر
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        # استخدام نموذج gemini-2.5-flash المحدث
+        model = genai.GenerativeModel('gemini-2.5-flash')
         response = model.generate_content(prompt)
         
         report_text = response.text
