@@ -130,4 +130,16 @@ else:
         # رسم بياني لتوزيع التقييمات
         if 'score' in filtered_df.columns and not filtered_df.empty:
             st.subheader("📈 توزيع درجات التقييم")
-            score_counts = filtered_df['score'].
+            score_counts = filtered_df['score'].value_counts().sort_index()
+            st.bar_chart(score_counts)
+
+    # 6. عرض التقرير الاستراتيجي
+    st.markdown("---")
+    st.subheader("📑 التقرير الاستراتيجي وتحليل الفجوات (AI-Powered)")
+
+    report_file = "market_gaps_report.txt"
+    if os.path.exists(report_file):
+        with open(report_file, "r", encoding="utf-8") as f:
+            st.text_area("محتوى التقرير الاستراتيجي:", f.read(), height=250)
+    else:
+        st.warning("⚠️ لم يتم العثور على ملف التقرير الاستراتيجي `market_gaps_report.txt`.")
