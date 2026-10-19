@@ -1,5 +1,6 @@
 streamlit
 pandas
-openpyxl
-google-play-scraper
 google-generativeai
+google-play-scraper
+matplotlib
+openpyxl
