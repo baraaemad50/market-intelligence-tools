@@ -42,23 +42,6 @@ st.markdown(
     .stTextInput, .stSelectbox, .stButton {
         direction: rtl;
     }
-    /* تصميم تأثير إنجاز متوهج وجذاب */
-    .glow-banner {
-        background: linear-gradient(135deg, #4CAF50, #2E7D32);
-        color: white;
-        padding: 15px 20px;
-        border-radius: 12px;
-        box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
-        text-align: center;
-        font-size: 18px;
-        font-weight: bold;
-        margin-bottom: 20px;
-        animation: fadeIn 0.8s ease-in-out;
-    }
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(-10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
     </style>
     """,
     unsafe_allow_html=True
@@ -76,8 +59,14 @@ keyword = st.sidebar.text_input("أدخل كلمة مفتاحية:", "food deliv
 country = st.sidebar.selectbox("الدولة:", ["ps", "us", "sa", "ae", "gb"], index=0)
 
 if st.sidebar.button("بحث عن التطبيقات"):
-    with st.spinner("جاري البحث..."):
-        st.session_state['apps'] = search_apps(keyword, country=country)
+    with st.spinner("جاري البحث في المتجر..."):
+        apps_result = search_apps(keyword, country=country)
+        st.session_state['apps'] = apps_result
+        # ✨ تأثير ملفت للانتباه وتنبيه فوري في القائمة الجانبية عند نجاح البحث
+        if apps_result:
+            st.sidebar.success(f"🎉 تم العثور على {len(apps_result)} تطبيق بنجاح!")
+        else:
+            st.sidebar.warning("⚠️ لم يتم العثور على تطبيقات.")
 
 app_dict = {}
 if 'apps' in st.session_state and st.session_state['apps']:
@@ -105,7 +94,10 @@ if 'apps' in st.session_state and st.session_state['apps']:
                     st.session_state['selected_ids'] = selected_app_ids
                     if os.path.exists("market_gaps_report.txt"):
                         os.remove("market_gaps_report.txt")
-                    st.success("تم الانتهاء بنجاح!")
+                    
+                    # ✨ تنبيه بصري ملفت عند نجاح التحليل وسحب البيانات
+                    st.toast('تم سحب المراجعات وبناء قاعدة البيانات بنجاح!', icon='📊')
+                    st.success("🚀 تم تجريف مراجعات المنافسين وإنشاء تقرير الإكسل وقاعدة البيانات بنجاح تام!")
                 else:
                     st.warning("لم يتم العثور على مراجعات كافية.")
 
@@ -180,11 +172,11 @@ if 'df' in st.session_state and not st.session_state['df'].empty:
             with st.spinner("جاري تحليل الفجوات عبر الذكاء الاصطناعي..."):
                 report = generate_market_gap_report(df, api_key=api_key)
                 
-                # ✨ إشعار منبثق وتأثير بصري متوهج بدلاً من البالونات
+                # ✨ تأثير بصري وتنبيه ملفت عند التوليد
                 st.toast('تم إعداد التقرير الاستراتيجي بنجاح!', icon='🤖')
-                st.markdown('<div class="glow-banner">✨ تم بنجاح تحليل السوق وتوليد التقرير الاستراتيجي التنفيذي بالذكاء الاصطناعي!</div>', unsafe_allow_html=True)
+                st.success("✨ تم بنجاح تحليل السوق وتوليد التقرير الاستراتيجي التنفيذي بالذكاء الاصطناعي!")
                 
-                # عرض التقرير داخل حاوية منسقة
-                st.markdown(f'<div style="direction: rtl; text-align: right; background-color: #fafafa; padding: 20px; border-radius: 10px; border-right: 5px solid #4CAF50;">{report}</div>', unsafe_allow_html=True)
+                # عرض التقرير داخل صندوق منظم
+                st.markdown(f'<div style="direction: rtl; text-align: right; background-color: #f8f9fa; padding: 25px; border-radius: 12px; border-right: 6px solid #2e7d32; border-left: 1px solid #e0e0e0; border-top: 1px solid #e0e0e0; border-bottom: 1px solid #e0e0e0; margin-top: 15px;">{report}</div>', unsafe_allow_html=True)
 else:
     st.info("يرجى استخدام القائمة الجانبية للبحث عن التطبيقات وتحديدها لبدء العمل.")
