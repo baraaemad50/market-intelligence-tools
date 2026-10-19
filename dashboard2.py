@@ -2,6 +2,7 @@ import os
 import sqlite3
 import pandas as pd
 import streamlit as st
+import matplotlib.pyplot as plt
 from market_engine import search_apps, scrape_app_reviews, save_to_sqlite, generate_excel_report
 from market_ai import generate_market_gap_report
 
@@ -40,6 +41,23 @@ st.markdown(
     }
     .stTextInput, .stSelectbox, .stButton {
         direction: rtl;
+    }
+    /* تصميم تأثير إنجاز متوهج وجذاب */
+    .glow-banner {
+        background: linear-gradient(135deg, #4CAF50, #2E7D32);
+        color: white;
+        padding: 15px 20px;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
+        text-align: center;
+        font-size: 18px;
+        font-weight: bold;
+        margin-bottom: 20px;
+        animation: fadeIn 0.8s ease-in-out;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
     }
     </style>
     """,
@@ -115,7 +133,7 @@ if 'df' in st.session_state and not st.session_state['df'].empty:
     col3.metric("عدد التطبيقات", df['app_id'].nunique())
     
     st.markdown("---")
-    st.subheader("التحليل البصري للرسوم البيانية")
+    st.subheader("التحليل البصري والرسوم البيانية")
     
     chart_col1, chart_col2 = st.columns(2)
     
@@ -125,13 +143,24 @@ if 'df' in st.session_state and not st.session_state['df'].empty:
         st.bar_chart(rating_counts)
         
     with chart_col2:
-        st.markdown("متوسط التقييم لكل تطبيق")
-        if 'app_name' in df.columns:
-            avg_scores = df.groupby('app_name')['score'].mean()
-            st.bar_chart(avg_scores)
-        else:
-            avg_scores = df.groupby('app_id')['score'].mean()
-            st.bar_chart(avg_scores)
+        st.markdown("تصنيف مشاعر العملاء (Sentiment Analysis)")
+        def get_sentiment(score):
+            if score >= 4:
+                return 'إيجابي (Positive)'
+            elif score == 3:
+                return 'محايد (Neutral)'
+            else:
+                return 'سلبي (Negative)'
+                
+        df['sentiment'] = df['score'].apply(get_sentiment)
+        sentiment_counts = df['sentiment'].value_counts()
+        
+        # رسم دائري لتصنيف المشاعر
+        fig, ax = plt.subplots(figsize=(4, 4))
+        colors = ['#4CAF50', '#FFC107', '#F44336']
+        ax.pie(sentiment_counts, labels=sentiment_counts.index, autopct='%1.1f%%', startangle=90, colors=colors[:len(sentiment_counts)])
+        ax.axis('equal')
+        st.pyplot(fig)
 
     st.markdown("---")
     st.subheader("عينة من مراجعات العملاء")
@@ -148,9 +177,14 @@ if 'df' in st.session_state and not st.session_state['df'].empty:
         if not api_key:
             st.error("يرجى إدخال مفتاح Gemini API أولاً.")
         else:
-            with st.spinner("جاري تحليل الفجوات..."):
+            with st.spinner("جاري تحليل الفجوات عبر الذكاء الاصطناعي..."):
                 report = generate_market_gap_report(df, api_key=api_key)
-                st.success("تم توليد التقرير بنجاح!")
-                st.markdown(f'<div style="direction: rtl; text-align: right;">{report}</div>', unsafe_allow_html=True)
+                
+                # ✨ إشعار منبثق وتأثير بصري متوهج بدلاً من البالونات
+                st.toast('تم إعداد التقرير الاستراتيجي بنجاح!', icon='🤖')
+                st.markdown('<div class="glow-banner">✨ تم بنجاح تحليل السوق وتوليد التقرير الاستراتيجي التنفيذي بالذكاء الاصطناعي!</div>', unsafe_allow_html=True)
+                
+                # عرض التقرير داخل حاوية منسقة
+                st.markdown(f'<div style="direction: rtl; text-align: right; background-color: #fafafa; padding: 20px; border-radius: 10px; border-right: 5px solid #4CAF50;">{report}</div>', unsafe_allow_html=True)
 else:
     st.info("يرجى استخدام القائمة الجانبية للبحث عن التطبيقات وتحديدها لبدء العمل.")
